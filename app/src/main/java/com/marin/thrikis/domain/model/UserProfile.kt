@@ -1,13 +1,9 @@
 package com.marin.thrikis.domain.model
 
 data class UserProfile(
-    val id: String,
-    val name: String,
-    val email: String,
+    val name: String = "Jugador",
     val level: Int = 1,
-    val xp: Long = 0L,
-    val wins: Int = 0,
-    val currentStreak: Int = 0,
-    val highestStreak: Int = 0,
-    val unlockedSymbols: List<Int> = listOf(1, 2)
+    val currentXp: Int = 0,
+    val equippedSymbolId: Int = Symbol.PLAYER_ONE_BASE.id,
+    val unlockedSymbolsIds: List<Int> = listOf(Symbol.PLAYER_ONE_BASE.id, Symbol.PLAYER_TWO_BASE.id)
 )

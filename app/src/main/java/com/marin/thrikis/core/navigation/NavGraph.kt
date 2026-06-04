@@ -10,10 +10,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.marin.thrikis.ui.menu.MenuScreen
-import com.marin.thrikis.ui.menu.MenuViewModel
 import com.marin.thrikis.ui.game.GameScreen
 import com.marin.thrikis.ui.game.GameViewModel
+import com.marin.thrikis.ui.menu.MenuScreen
+import com.marin.thrikis.ui.menu.MenuViewModel
+import com.marin.thrikis.ui.profile.ProfileScreen
+import com.marin.thrikis.ui.profile.ProfileViewModel
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -55,11 +57,14 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Screen.Profile.route) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId") ?: ""
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Perfil del Usuario ID: $userId")
-            }
+        composable(Screen.Profile.route) {
+            val profileViewModel: ProfileViewModel = viewModel()
+            ProfileScreen(
+                viewModel = profileViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
 
         composable(Screen.Friends.route) {
