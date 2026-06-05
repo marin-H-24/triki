@@ -1,7 +1,6 @@
 package com.marin.thrikis.ui.game
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.marin.thrikis.data.network.BluetoothController
 import com.marin.thrikis.domain.model.SupremeBoard
@@ -12,10 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class GameViewModel(application: Application) : AndroidViewModel(application) {
+class GameViewModel : ViewModel() {
 
     private val processMoveUseCase = ProcessMoveUseCase()
-    private val bluetoothController = BluetoothController(application.applicationContext)
 
     private val _boardState = MutableStateFlow(SupremeBoard())
     val boardState: StateFlow<SupremeBoard> = _boardState.asStateFlow()
@@ -34,6 +32,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _currentTurn.value = Symbol.PLAYER_ONE_BASE
 
         if (mode == "bluetooth") {
+            myRoleSymbol = if (BluetoothController.isHost) {
+                Symbol.PLAYER_ONE_BASE
+            } else {
+                Symbol.PLAYER_TWO_BASE
+            }
             listenForBluetoothMoves()
         }
     }
@@ -49,7 +52,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         if (success && _gameMode.value == "bluetooth") {
             val message = "$macroRow,$macroCol,$microRow,$microCol"
-            bluetoothController.sendData(message)
+            BluetoothController.sendData(message)
         }
     }
 
@@ -81,7 +84,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun listenForBluetoothMoves() {
         viewModelScope.launch {
-            bluetoothController.incomingMessage.collect { message ->
+            BluetoothController.incomingMessage.collect { message ->
                 if (!message.isNullOrEmpty()) {
                     val parts = message.split(",")
                     if (parts.size == 4) {
@@ -107,7 +110,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         if (_gameMode.value == "bluetooth") {
-            bluetoothController.disconnect()
+            BluetoothController.disconnect()
         }
     }
 }

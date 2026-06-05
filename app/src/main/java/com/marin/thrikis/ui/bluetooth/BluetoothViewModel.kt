@@ -1,8 +1,6 @@
 package com.marin.thrikis.ui.bluetooth
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,27 +13,26 @@ import kotlinx.coroutines.launch
 @SuppressLint("MissingPermission")
 class BluetoothViewModel(context: Context) : ViewModel() {
 
-    private val bluetoothController = BluetoothController(context)
-
-    private val bluetoothAdapter: BluetoothAdapter? by lazy {
-        context.getSystemService(BluetoothManager::class.java)?.adapter
-    }
-
     private val _pairedDevices = MutableStateFlow<List<Pair<String, String>>>(emptyList())
     val pairedDevices: StateFlow<List<Pair<String, String>>> = _pairedDevices.asStateFlow()
 
     private val _isHosting = MutableStateFlow(false)
     val isHosting: StateFlow<Boolean> = _isHosting.asStateFlow()
 
-    val isConnected: StateFlow<Boolean> = bluetoothController.isConnected
+    val isConnected: StateFlow<Boolean> = BluetoothController.isConnected
+
+    init {
+        BluetoothController.init(context)
+    }
 
     fun isBluetoothReady(): Boolean {
-        return bluetoothController.isBluetoothEnabled()
+        return BluetoothController.isBluetoothEnabled()
     }
 
     fun loadPairedDevices() {
         if (!isBluetoothReady()) return
-        val devices = bluetoothAdapter?.bondedDevices
+        val adapter = android.bluetooth.BluetoothAdapter.getDefaultAdapter()
+        val devices = adapter?.bondedDevices
         if (devices != null) {
             _pairedDevices.value = devices.map { device ->
                 device.name to device.address
@@ -47,7 +44,7 @@ class BluetoothViewModel(context: Context) : ViewModel() {
         if (!isBluetoothReady()) return
         _isHosting.value = true
         viewModelScope.launch {
-            bluetoothController.startServer()
+            BluetoothController.startServer()
         }
     }
 
@@ -55,12 +52,7 @@ class BluetoothViewModel(context: Context) : ViewModel() {
         if (!isBluetoothReady()) return
         _isHosting.value = false
         viewModelScope.launch {
-            bluetoothController.connectToDevice(address)
+            BluetoothController.connectToDevice(address)
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        bluetoothController.disconnect()
     }
 }
