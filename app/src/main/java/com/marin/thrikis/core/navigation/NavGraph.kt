@@ -6,10 +6,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.marin.thrikis.ui.bluetooth.BluetoothScreen
+import com.marin.thrikis.ui.bluetooth.BluetoothViewModel
 import com.marin.thrikis.ui.game.GameScreen
 import com.marin.thrikis.ui.game.GameViewModel
 import com.marin.thrikis.ui.menu.MenuScreen
@@ -34,13 +37,35 @@ fun NavGraph(navController: NavHostController) {
             MenuScreen(
                 viewModel = menuViewModel,
                 onNavigateToGame = { mode ->
-                    navController.navigate(Screen.Game.createRoute(mode))
+                    if (mode == "bluetooth") {
+                        navController.navigate(Screen.Bluetooth.route)
+                    } else {
+                        navController.navigate(Screen.Game.createRoute(mode))
+                    }
                 },
                 onNavigateToProfile = { userId ->
                     navController.navigate(Screen.Profile.createRoute(userId))
                 },
                 onNavigateToFriends = {
                     navController.navigate(Screen.Friends.route)
+                }
+            )
+        }
+
+        composable(Screen.Bluetooth.route) {
+            val context = LocalContext.current
+            val bluetoothViewModel: BluetoothViewModel = viewModel {
+                BluetoothViewModel(context.applicationContext)
+            }
+            BluetoothScreen(
+                viewModel = bluetoothViewModel,
+                onConnectionSuccess = {
+                    navController.navigate(Screen.Game.createRoute("bluetooth")) {
+                        popUpTo(Screen.Bluetooth.route) { inclusive = true }
+                    }
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
