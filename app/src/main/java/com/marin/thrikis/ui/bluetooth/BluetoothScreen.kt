@@ -1,5 +1,9 @@
 package com.marin.thrikis.ui.bluetooth
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,8 +42,30 @@ fun BluetoothScreen(
     val pairedDevices by viewModel.pairedDevices.collectAsState()
     val isConnected by viewModel.isConnected.collectAsState()
 
+    val bluetoothPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        arrayOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    } else {
+        arrayOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.values.all { it }) {
+            viewModel.loadPairedDevices()
+        }
+    }
+
     LaunchedEffect(Unit) {
-        viewModel.loadPairedDevices()
+        permissionLauncher.launch(bluetoothPermissions)
     }
 
     LaunchedEffect(isConnected) {
@@ -68,12 +94,22 @@ fun BluetoothScreen(
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
+            if (!viewModel.isBluetoothReady()) {
+                Text(
+                    text = "Por favor, enciende el Bluetooth en los ajustes de tu dispositivo.",
+                    color = Color(0xFFFF5252),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Button(
                     onClick = { viewModel.startHosting() },
+                    enabled = viewModel.isBluetoothReady(),
                     modifier = Modifier.weight(1f).height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
                     shape = RoundedCornerShape(12.dp)
@@ -113,7 +149,9 @@ fun BluetoothScreen(
                                 .fillMaxWidth()
                                 .background(Color(0xFF1E1E2F), RoundedCornerShape(8.dp))
                                 .border(1.dp, Color(0xFF424242), RoundedCornerShape(8.dp))
-                                .clickable { viewModel.connectToDevice(address) }
+                                .clickable(enabled = viewModel.isBluetoothReady()) {
+                                    viewModel.connectToDevice(address)
+                                }
                                 .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically

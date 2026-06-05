@@ -15,10 +15,11 @@ import java.io.IOException
 import java.util.UUID
 
 @SuppressLint("MissingPermission")
-class BluetoothController(context: Context) {
+class BluetoothController(private val context: Context) {
 
-    private val bluetoothAdapter: BluetoothAdapter? =
+    private val bluetoothAdapter: BluetoothAdapter? by lazy {
         context.getSystemService(BluetoothManager::class.java)?.adapter
+    }
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
@@ -31,9 +32,15 @@ class BluetoothController(context: Context) {
 
     private val serviceUUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
+    fun isBluetoothEnabled(): Boolean {
+        return bluetoothAdapter?.isEnabled == true
+    }
+
     suspend fun startServer() {
+        if (!isBluetoothEnabled()) return
         withContext(Dispatchers.IO) {
             try {
+                serverSocket?.close()
                 serverSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord("Thrikis", serviceUUID)
                 val socket = serverSocket?.accept()
                 if (socket != null) {
@@ -48,8 +55,10 @@ class BluetoothController(context: Context) {
     }
 
     suspend fun connectToDevice(deviceAddress: String) {
+        if (!isBluetoothEnabled()) return
         withContext(Dispatchers.IO) {
             try {
+                currentSocket?.close()
                 val device = bluetoothAdapter?.getRemoteDevice(deviceAddress)
                 currentSocket = device?.createRfcommSocketToServiceRecord(serviceUUID)
                 currentSocket?.connect()
@@ -93,6 +102,7 @@ class BluetoothController(context: Context) {
             currentSocket?.close()
             _isConnected.value = false
         } catch (e: IOException) {
+            // Error silenciado de forma segura
         }
     }
 }
