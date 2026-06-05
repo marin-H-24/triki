@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +43,7 @@ fun BluetoothScreen(
 ) {
     val pairedDevices by viewModel.pairedDevices.collectAsState()
     val isConnected by viewModel.isConnected.collectAsState()
+    val isHosting by viewModel.isHosting.collectAsState()
 
     val bluetoothPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         arrayOf(
@@ -109,12 +112,29 @@ fun BluetoothScreen(
             ) {
                 Button(
                     onClick = { viewModel.startHosting() },
-                    enabled = viewModel.isBluetoothReady(),
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                    enabled = viewModel.isBluetoothReady() && !isHosting,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isHosting) Color(0xFF1E1E2F) else Color(0xFF3F51B5),
+                        disabledContainerColor = if (isHosting) Color(0xFF1E1E2F) else Color(0xFF2A2A2A)
+                    ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Crear Sala", color = Color.White)
+                    if (isHosting) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color(0xFFFFD700),
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Text("Esperando oponente...", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        Text("Crear Sala (Host)", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -148,8 +168,12 @@ fun BluetoothScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(Color(0xFF1E1E2F), RoundedCornerShape(8.dp))
-                                .border(1.dp, Color(0xFF424242), RoundedCornerShape(8.dp))
-                                .clickable(enabled = viewModel.isBluetoothReady()) {
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isHosting) Color(0xFF2A2A2A) else Color(0xFF424242),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable(enabled = viewModel.isBluetoothReady() && !isHosting) {
                                     viewModel.connectToDevice(address)
                                 }
                                 .padding(16.dp),
@@ -157,10 +181,19 @@ fun BluetoothScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(text = name, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = name,
+                                    color = if (isHosting) Color.Gray else Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                                 Text(text = address, color = Color.Gray, fontSize = 12.sp)
                             }
-                            Text(text = "Conectar", color = Color(0xFFFFD700), fontSize = 14.sp)
+                            Text(
+                                text = "Conectar",
+                                color = if (isHosting) Color.DarkGray else Color(0xFFFFD700),
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }

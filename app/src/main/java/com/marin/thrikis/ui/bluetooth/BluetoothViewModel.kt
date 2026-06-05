@@ -24,6 +24,9 @@ class BluetoothViewModel(context: Context) : ViewModel() {
     private val _pairedDevices = MutableStateFlow<List<Pair<String, String>>>(emptyList())
     val pairedDevices: StateFlow<List<Pair<String, String>>> = _pairedDevices.asStateFlow()
 
+    private val _isHosting = MutableStateFlow(false)
+    val isHosting: StateFlow<Boolean> = _isHosting.asStateFlow()
+
     val isConnected: StateFlow<Boolean> = bluetoothController.isConnected
 
     fun isBluetoothReady(): Boolean {
@@ -42,6 +45,7 @@ class BluetoothViewModel(context: Context) : ViewModel() {
 
     fun startHosting() {
         if (!isBluetoothReady()) return
+        _isHosting.value = true
         viewModelScope.launch {
             bluetoothController.startServer()
         }
@@ -49,6 +53,7 @@ class BluetoothViewModel(context: Context) : ViewModel() {
 
     fun connectToDevice(address: String) {
         if (!isBluetoothReady()) return
+        _isHosting.value = false
         viewModelScope.launch {
             bluetoothController.connectToDevice(address)
         }
